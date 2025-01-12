@@ -81,6 +81,14 @@ flask run
 gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 app:app
 ```
 
+或者
+
+```bash
+python app.py
+或者
+PORT=5000 python app.py
+```
+
 访问 http://localhost:5000 开始使用
 
 ## 项目结构
