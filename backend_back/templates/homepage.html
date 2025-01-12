@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>社区论坛</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <h1>发布新帖子</h1>
+    <form method="POST" action="{{ url_for('post') }}">
+        <input type="text" name="title" placeholder="帖子标题" required>
+        <textarea name="content" placeholder="写下你的想法..." required></textarea>
+        <button type="submit">发布</button>
+    </form>
+
+    <h2>帖子列表</h2>
+    {% for post in posts %}
+        <div class="post">
+            <h3>{{ post.title }}</h3>
+            <p>{{ post.content }}</p>
+            <small>发布时间：{{ post.date_posted.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+        </div>
+    {% endfor %}
+
+    <h2>实时聊天室</h2>
+    <div id="messages"></div>
+    <input type="text" id="message" placeholder="输入消息...">
+    <button onclick="sendMessage()">发送</button>
+
+    <script>
+        var socket = io();
+        
+        function sendMessage() {
+            var message = document.getElementById('message').value;
+            socket.emit('message', message);
+            document.getElementById('message').value = '';
+        }
+
+        socket.on('message', function(msg) {
+            var messages = document.getElementById('messages');
+            messages.innerHTML += '<p>' + msg + '</p>';
+        });
+    </script>
+</body>
+</html>

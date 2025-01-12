@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}聊天室 - 社区论坛{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 聊天室列表 -->
+    <div class="col-md-3">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">我的聊天室</h5>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-primary mb-3 w-100" data-bs-toggle="modal" data-bs-target="#createRoomModal">
+                    <i class="fa fa-plus"></i> 创建聊天室
+                </button>
+                <div class="room-list">
+                    {% for room in user_rooms %}
+                    <div class="room-item {% if active_room and active_room.id == room.id %}active{% endif %}">
+                        <a href="{{ url_for('chat', room_id=room.id) }}" class="room-link">
+                            <h6 class="mb-1">{{ room.name }}</h6>
+                            <small class="text-muted">{{ room.members|length }} 位成员</small>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 所有聊天室列表 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">所有聊天室</h5>
+            </div>
+            <div class="card-body">
+                <div class="room-list">
+                    {% for room in all_rooms %}
+                        {% if room not in user_rooms %}
+                        <div class="room-item not-member">
+                            <div class="room-info">
+                                <h6 class="mb-1">{{ room.name }}</h6>
+                                <small class="text-muted">{{ room.members|length }} 位成员</small>
+                                <small class="text-muted d-block">创建者: {{ room.owner.username }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 聊天区域 -->
+    <div class="col-md-9">
+        {% if active_room %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ active_room.name }}</h5>
+                {% if active_room.owner_id == current_user.id %}
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#inviteModal">
+                    <i class="fa fa-user-plus"></i> 邀请用户
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div id="messages" class="chat-messages"></div>
+                <div class="chat-input-container">
+                    <input type="text" id="message" class="form-control" placeholder="输入消息...">
+                    <button onclick="sendMessage()" class="btn btn-primary ms-2">发送</button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>请选择或创建一个聊天室</h5>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 创建聊天室模态框 -->
+<div class="modal fade" id="createRoomModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">创建新聊天室</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('create_room') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">聊天室名称</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">描述</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">创建</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 邀请用户模态框 -->
+<div class="modal fade" id="inviteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">邀请用户</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('invite_user', room_id=active_room.id if active_room else 0) }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">选择用户</label>
+                        <select class="form-select" name="user_id" multiple required>
+                            {% for user in available_users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">邀请</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+    // 将服务器端变量转换为 JavaScript 变量
+    window.ROOM_ID = {{ active_room.id|tojson|safe if active_room else 'null' }};
+    window.CHAT_HISTORY = {{ chat_history|tojson|safe if chat_history else '[]' }};
+    console.log('初始化 - Room ID:', window.ROOM_ID);
+    console.log('初始化 - Chat History:', window.CHAT_HISTORY);
+</script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %} 

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}个人中心 - 社区论坛{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <img src="{{ url_for('static', filename='avatars/' + user.avatar) }}" 
+                     class="rounded-circle mb-3" style="width: 150px; height: 150px;">
+                <h5 class="card-title">{{ user.username }}</h5>
+                <p class="card-text text-muted">{{ user.email }}</p>
+                <p class="card-text">
+                    <small class="text-muted">加入时间：{{ user.created_at.strftime('%Y-%m-%d') }}</small>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">我的帖子</h5>
+                {% for post in user_posts %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ post.title }}</h6>
+                        <p class="card-text">{{ post.content }}</p>
+                        <small class="text-muted">
+                            发布时间：{{ post.date_posted.strftime('%Y-%m-%d %H:%M:%S') }}
+                        </small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
